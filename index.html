@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Main Character Sim</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --card: #181c26;
+      --panel: rgba(255, 255, 255, 0.04);
+      --border: rgba(255, 255, 255, 0.09);
+      --text: #f3f4f6;
+      --muted: #9ca3af;
+      --accent: #a855f7;
+      --gold: #f59e0b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 720px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 22px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.45rem;
+    }
+
+    .stats {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .stat-pill {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .stat-pill span {
+      color: var(--gold);
+    }
+
+    /* Walking Stage */
+    #mc-stage {
+      position: relative;
+      width: 100%;
+      height: 125px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(168, 85, 247, 0.08), rgba(255, 255, 255, 0.02));
+      border: 1px solid var(--border);
+      overflow: hidden;
+      margin-bottom: 18px;
+    }
+
+    #mc-actor {
+      position: absolute;
+      bottom: 14px;
+      left: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: mcBob 0.7s ease-in-out infinite;
+    }
+
+    #mc-actor.facing-left {
+      transform: scaleX(-1);
+    }
+
+    .mc-head-wrap {
+      position: relative;
+      width: 22px;
+      height: 22px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .mc-head {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #c68642;
+      border: 2px solid #1f1610;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Hairstyle Visuals */
+    .mc-hair {
+      position: absolute;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    .hair-wolf-pixie {
+      top: -3px;
+      width: 24px;
+      height: 16px;
+      background: #111115;
+      border-radius: 12px 12px 4px 4px;
+      clip-path: polygon(0% 100%, 10% 15%, 35% 0%, 65% 0%, 90% 15%, 100% 100%, 82% 70%, 65% 95%, 50% 65%, 35% 95%, 18% 70%);
+    }
+
+    .hair-french-curls {
+      top: -2px;
+      width: 26px;
+      height: 30px;
+      background: #141218;
+      border-radius: 12px 12px 8px 8px;
+      z-index: 1;
+    }
+
+    .hair-fringe-bob {
+      top: -2px;
+      width: 23px;
+      height: 21px;
+      background: #141218;
+      border-radius: 11px 11px 3px 3px;
+      z-index: 1;
+    }
+
+    .hair-fringe-bob::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 3px;
+      width: 17px;
+      height: 6px;
+      background: #141218;
+      border-radius: 0 0 4px 4px;
+      z-index: 4;
+    }
+
+    .hair-sleek-bun {
+      top: -2px;
+      width: 20px;
+      height: 12px;
+      background: #141218;
+      border-radius: 10px 10px 0 0;
+    }
+
+    .hair-sleek-bun::before {
+      content: "";
+      position: absolute;
+      top: -6px;
+      left: 5px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #141218;
+    }
+
+    .hair-silk-press {
+      top: -2px;
+      width: 24px;
+      height: 34px;
+      background: linear-gradient(180deg, #111115, #27222b);
+      border-radius: 12px 12px 2px 2px;
+      z-index: 1;
+    }
+
+    .mc-torso {
+      width: 22px;
+      height: 24px;
+      border-radius: 8px 8px 4px 4px;
+      background: var(--accent);
+      margin-top: 1px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .mc-legs {
+      display: flex;
+      gap: 4px;
+      margin-top: 1px;
+    }
+
+    .mc-leg {
+      width: 6px;
+      height: 14px;
+      border-radius: 3px;
+      background: #1e293b;
+      transform-origin: top center;
+    }
+
+    .mc-leg-left {
+      animation: mcLegSwing 0.5s ease-in-out infinite;
+    }
+
+    .mc-leg-right {
+      animation: mcLegSwing 0.5s ease-in-out infinite reverse;
+    }
+
+    @keyframes mcLegSwing {
+      0%, 100% { transform: rotate(-22deg); }
+      50% { transform: rotate(22deg); }
+    }
+
+    @keyframes mcBob {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-3px); }
+    }
+
+    /* Controls & Panels */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    @media (max-width: 600px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .panel h2 {
+      margin: 0 0 10px;
+      font-size: 0.95rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    select {
+      width: 100%;
+      padding: 9px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #11141d;
+      color: var(--text);
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+    }
+
+    .job-desc {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin: 0 0 12px;
+      min-height: 36px;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 9px 14px;
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    button:hover {
+      opacity: 0.92;
+    }
+
+    .log-box {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="header">
+      <h1>Main Character Sim</h1>
+      <div class="stats">
+        <div class="stat-pill">Cash: <span id="cash-val">$500</span></div>
+        <div class="stat-pill">Aura: <span id="aura-val">50</span></div>
+        <div class="stat-pill">Look: <span id="hair-label">Wolf Pixie Cut</span></div>
+      </div>
+    </div>
+
+    <div id="mc-stage">
+      <div id="mc-actor">
+        <div class="mc-head-wrap">
+          <div id="mc-hair" class="mc-hair hair-wolf-pixie"></div>
+          <div class="mc-head"></div>
+        </div>
+        <div id="mc-torso" class="mc-torso"></div>
+        <div class="mc-legs">
+          <div class="mc-leg mc-leg-left"></div>
+          <div class="mc-leg mc-leg-right"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <section class="panel">
+        <h2>Career &amp; Hustle</h2>
+        <label for="job-select">Choose Your Career</label>
+        <select id="job-select"></select>
+        <p class="job-desc" id="job-desc"></p>
+        <div class="btn-row">
+          <button id="work-btn" type="button">Work Shift</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Hair &amp; Style Studio</h2>
+        <label for="hair-select">Choose Hairstyle</label>
+        <select id="hair-select">
+          <option value="hair-wolf-pixie" data-name="Wolf Pixie Cut" data-color="#a855f7">Wolf Pixie Cut</option>
+          <option value="hair-french-curls" data-name="French Curls" data-color="#ec4899">French Curls</option>
+          <option value="hair-fringe-bob" data-name="Fringe Bob" data-color="#10b981">Fringe Bob</option>
+          <option value="hair-sleek-bun" data-name="Clean-Girl Sleek Bun" data-color="#f59e0b">Clean-Girl Sleek Bun</option>
+          <option value="hair-silk-press" data-name="Bone Straight Silk Press" data-color="#3b82f6">Bone Straight Silk Press</option>
+        </select>
+        <p class="job-desc">Switch hairstyles anytime—your character updates live on the stage.</p>
+        <div class="btn-row">
+          <button id="slay-btn" class="secondary" type="button">Pose &amp; Boost Aura (+5)</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="log-box" id="log-box">
+      Welcome back. Pick your career, style your hair, and start your shift.
+    </div>
+  </main>
+
+  <script>
+    // 1. Walking Character Loop
+    const mcStage = document.getElementById("mc-stage");
+    const mcActor = document.getElementById("mc-actor");
+
+    if (mcStage && mcActor) {
+      let mcX = 20;
+      let mcDir = 1;
+      const mcSpeed = 0.85;
+
+      function stepCharacter() {
+        const maxX = Math.max(20, mcStage.clientWidth - mcActor.offsetWidth - 20);
+        mcX += mcSpeed * mcDir;
+
+        if (mcX >= maxX) {
+          mcX = maxX;
+          mcDir = -1;
+          mcActor.classList.add("facing-left");
+        } else if (mcX <= 20) {
+          mcX = 20;
+          mcDir = 1;
+          mcActor.classList.remove("facing-left");
+        }
+
+        mcActor.style.left = `${mcX}px`;
+        requestAnimationFrame(stepCharacter);
+      }
+
+      requestAnimationFrame(stepCharacter);
+    }
+
+    // 2. Expanded Job Options
+    const jobs = [
+      {
+        title: "Tattoo Artist",
+        pay: 220,
+        aura: 6,
+        desc: "Custom fine-line ink, flash sheets, and private studio appointments.",
+        actionText: "Finished a custom fine-line tattoo session and earned"
+      },
+      {
+        title: "Hairstylist & Wig Maker",
+        pay: 190,
+        aura: 5,
+        desc: "Custom frontal units, wolf pixie cuts, and luxury French curl installs.",
+        actionText: "Completed a custom wig install and earned"
+      },
+      {
+        title: "Corporate Lawyer",
+        pay: 360,
+        aura: 7,
+        desc: "Drafting high-stakes contracts, negotiating deals, and advising executive teams.",
+        actionText: "Closed a high-value corporate contract and earned"
+      },
+      {
+        title: "Defense Attorney",
+        pay: 340,
+        aura: 8,
+        desc: "Building sharp courtroom arguments, cross-examining witnesses, and protecting clients.",
+        actionText: "Won a sharp courtroom argument and earned"
+      },
+      {
+        title: "Entertainment & IP Lawyer",
+        pay: 325,
+        aura: 8,
+        desc: "Protecting brand rights, creator royalties, and talent agreements.",
+        actionText: "Negotiated a creator rights deal and earned"
+      },
+      {
+        title: "Registered Nurse",
+        pay: 240,
+        aura: 5,
+        desc: "Fast-paced hospital rounds, patient care, and clinical precision.",
+        actionText: "Completed a clinical hospital shift and earned"
+      },
+      {
+        title: "Neurosurgeon",
+        pay: 520,
+        aura: 10,
+        desc: "High-stakes cranial surgeries and top-tier medical leadership.",
+        actionText: "Led a successful neurosurgery procedure and earned"
+      },
+      {
+        title: "Content Creator",
+        pay: 175,
+        aura: 7,
+        desc: "Viral short-form videos, brand sponsorships, and aesthetic edits.",
+        actionText: "Posted a viral aesthetic reel and earned"
+      },
+      {
+        title: "Fashion Stylist",
+        pay: 185,
+        aura: 6,
+        desc: "Curating tailored blazers, corset dresses, and editorial shoots.",
+        actionText: "Styled a VIP lookbook shoot and earned"
+      },
+      {
+        title: "Piercer & Body Mod Artist",
+        pay: 165,
+        aura: 5,
+        desc: "Curated gold ear styling and sterile precision piercings.",
+        actionText: "Styled a gold ear curation client and earned"
+      },
+      {
+        title: "Creative Director",
+        pay: 310,
+        aura: 8,
+        desc: "Leading visual campaigns, moodboards, and luxury brand launches.",
+        actionText: "Directed a brand campaign launch and earned"
+      }
+    ];
+
+    let cash = 500;
+    let aura = 50;
+
+    const jobSelect = document.getElementById("job-select");
+    const jobDesc = document.getElementById("job-desc");
+    const workBtn = document.getElementById("work-btn");
+    const hairSelect = document.getElementById("hair-select");
+    const slayBtn = document.getElementById("slay-btn");
+    const mcHair = document.getElementById("mc-hair");
+    const mcTorso = document.getElementById("mc-torso");
+    const cashVal = document.getElementById("cash-val");
+    const auraVal = document.getElementById("aura-val");
+    const hairLabel = document.getElementById("hair-label");
+    const logBox = document.getElementById("log-box");
+
+    // Populate jobs dropdown
+    jobs.forEach((job, index) => {
+      const opt = document.createElement("option");
+      opt.value = index;
+      opt.textContent = `${job.title} ($${job.pay}/shift)`;
+      jobSelect.appendChild(opt);
+    });
+
+    function updateJobDetails() {
+      const selected = jobs[jobSelect.value];
+      jobDesc.textContent = selected.desc;
+    }
+
+    jobSelect.addEventListener("change", updateJobDetails);
+    updateJobDetails();
+
+    workBtn.addEventListener("click", () => {
+      const selected = jobs[jobSelect.value];
+      cash += selected.pay;
+      aura += selected.aura;
+      cashVal.textContent = `$${cash}`;
+      auraVal.textContent = aura;
+      logBox.textContent = `${selected.actionText} $${selected.pay} (+${selected.aura} Aura)!`;
+    });
+
+    hairSelect.addEventListener("change", () => {
+      const selectedOpt = hairSelect.options[hairSelect.selectedIndex];
+      const hairClass = selectedOpt.value;
+      const hairName = selectedOpt.dataset.name;
+      const outfitColor = selectedOpt.dataset.color;
+
+      mcHair.className = `mc-hair ${hairClass}`;
+      mcTorso.style.background = outfitColor;
+      hairLabel.textContent = hairName;
+      logBox.textContent = `Switched hairstyle to ${hairName}!`;
+    });
+
+    slayBtn.addEventListener("click", () => {
+      aura += 5;
+      auraVal.textContent = aura;
+      logBox.textContent = `Main character energy activated (+5 Aura).`;
+    });
+  </script>
+</body>
+</html>
